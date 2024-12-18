@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en" style="margin:0;padding:0;">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no"/>
+<title>Emoji Day Planner</title>
+<style>
+/* 
+  Final Ultra-Refined, All-Integrated Version
+  ----------------------------------------------------------
+  Requirements Recap:
+  - Pastel blue background (#CFE8FF), white card elements.
+  - White bold text in a fixed-width font with a subtle blue outline and rounded background behind text.
+  - Minimalist, high-end, $1B look and feel, native-like, child-friendly, fully responsive.
+  - No leftover pink or conflicting colors. Stick to pastel blue, white, and subtle accents (green/orange/blue).
+  - Smooth drag-and-drop with magnet, perfect emoji fitting, return if outside placeholders.
+  - Homework toggle: On toggle ON: turn green, show "Homework 👋", wubble animation once, confetti. On toggle OFF: revert to orange, "Homework" text.
+  - Reset button visible in header to restore initial state.
+  - Tutorial scene with ghost on startup.
+  - No search bar, just category arrows and deck.
+  - Butter-smooth animations, transitions, no elements cut off on any device.
+*/
+
+/* Colors & Theme */
+:root {
+  --bg-color: #CFE8FF; 
+  --card-bg: #ffffff;
+  --border-radius: 1rem;
+  --text-color: #ffffff;
+  --outline-color: #26C1FC; 
+  --accent-green: #8DD54F;
+  --accent-orange: #FFB525;
+  --transition-speed: 0.3s;
+  --text-bg: rgba(38,193,252,0.15); /* very subtle pastel blue behind text */
+}
+
+/* Base Styles */
+html, body {
+  margin:0; padding:0; width:100%; height:100%; overflow:hidden;
+  background:var(--bg-color);
+  font-family:'Courier New', Courier, monospace; 
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+}
+
+#app {
+  position:relative; width:100%; height:100%;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  box-sizing:border-box; touch-action:none;
+}
+
+/* Text Styling:
+   White bold text, fixed-width font. Add a subtle blue outline and a rounded pastel-blue background behind text.
+*/
+.text-bubble {
+  font-weight:bold;
+  color:var(--text-color);
+  -webkit-text-stroke:0.5px var(--outline-color);
+  text-shadow:0 0 2px var(--outline-color);
+  background:var(--text-bg);
+  border-radius:0.5rem;
+  padding:0.1em 0.3em;
+  display:inline-block;
+}
+
+/* For larger text elements or container labels, we also use .text-bubble. 
+   For clarity, all textual UI elements will have .text-bubble applied.
+*/
+
+/* START BOX */
+#startBox {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.5);
+  display:flex; align-items:center; justify-content:center;
+  z-index:1000; padding:2rem; box-sizing:border-box;
+}
+.startContent {
+  background:var(--card-bg);
+  border-radius:var(--border-radius);
+  padding:1.5rem; text-align:center;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+.startContent p {
+  margin:0.5rem 0;
+}
+.startContent p, .startButton {
+  display:inline-block;
+}
+.startButton {
+  margin-top:1rem; padding:0.5rem 1.5rem;
+  background:var(--accent-green); border:none; border-radius:var(--border-radius);
+  box-shadow:0 3px 6px rgba(0,0,0,0.1);
+  font-size:calc(0.9rem + 0.3vw); cursor:pointer; transition:transform 0.1s;
+  color:#fff;
+  /* Apply text-bubble style to text inside button */
+  position:relative;
+}
+.startButton:active { transform:scale(0.95); }
+
+/* HEADER */
+.header {
+  width:90%; margin-top:2vh; display:flex; align-items:center; justify-content:space-between;
+  font-size:calc(1rem + 0.4vw);
+}
+.header-title, .timeDisplay {
+  display:inline-block; 
+}
+.resetBtn {
+  background:var(--accent-green); color:#fff; border:none; border-radius:var(--border-radius);
+  padding:0.3rem 0.7rem; font-size:0.8rem; cursor:pointer; margin-left:0.5rem;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1); 
+  transition:transform 0.1s;
+}
+.resetBtn:active { transform:scale(0.95); }
+
+/* SEGMENTS */
+.segmentsContainer {
+  flex:1; width:90%; display:flex; flex-direction:column; align-items:center; justify-content:space-evenly;
+  margin:2vh 0; box-sizing:border-box;
+}
+.segmentBlock {
+  width:100%; background:var(--card-bg); border-radius:var(--border-radius);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:1rem; box-sizing:border-box;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+.placeholders {
+  flex:1; display:flex; align-items:center; justify-content:flex-start; gap:0.5rem;
+  margin:0 1rem;
+}
+.placeholder {
+  width:2.5rem; height:2.5rem; background:var(--card-bg);
+  border-radius:var(--border-radius);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.2rem; user-select:none; position:relative;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+  transition:box-shadow 0.1s;
+}
+.placeholder.glow {
+  box-shadow:0 0 8px #fff;
+}
+.addPlaceholderBtn {
+  width:2.5rem; height:2.5rem; background:var(--accent-green);
+  border:none; border-radius:var(--border-radius);
+  display:flex; align-items:center; justify-content:center; font-size:1.2rem; cursor:pointer; color:#fff;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+  transition:transform 0.1s;
+}
+.addPlaceholderBtn:active { transform:scale(0.95); }
+
+/* HOMEWORK BUTTON */
+.homeworkBtn {
+  width:90%; background:var(--accent-orange); border-radius:var(--border-radius);
+  padding:0.8rem; margin-bottom:2vh; cursor:pointer;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  font-size:calc(1rem + 0.3vw);
+  transition:transform 0.1s;
+  color:#fff;
+}
+.homeworkBtn:active { transform:scale(0.95); }
+
+/* EMOJI DECK */
+.emojiDeckContainer {
+  width:90%; background:var(--card-bg); border-radius:var(--border-radius);
+  display:flex; flex-direction:column; align-items:center; justify-content:space-evenly;
+  padding:1rem; box-sizing:border-box; margin-bottom:2vh;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+.arrowsContainer {
+  width:100%; display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;
+}
+.arrowBtn {
+  background:none; border:none; color:var(--outline-color);
+  font-size:1.5rem; cursor:pointer; transition:transform 0.1s;
+}
+.arrowBtn:active { transform:scale(0.9); }
+.emoji-grid {
+  width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(2.5rem,1fr));
+  grid-auto-rows:2.5rem; gap:0.5rem; justify-items:center; align-items:center;
+}
+.emojiItem {
+  width:2.5rem; height:2.5rem; background:var(--card-bg);
+  border-radius:var(--border-radius);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.2rem; color:#fff;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+  cursor:pointer; user-select:none;
+}
+
+/* TUTORIAL OVERLAY */
+#tutorialOverlay {
+  position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5);
+  display:none; flex-direction:column; align-items:center; justify-content:center; z-index:999;
+  padding:2rem; box-sizing:border-box;
+}
+.tutorialContent {
+  background:var(--card-bg); border-radius:var(--border-radius);
+  padding:1rem; text-align:center; max-width:80%; width:200px; box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  color:#333;
+}
+.tutorialButton {
+  background:var(--accent-green); border:none; border-radius:var(--border-radius);
+  padding:0.3rem 0.8rem; font-weight:bold; cursor:pointer; margin-top:0.5rem;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+  color:#fff; transition:transform 0.1s;
+}
+.tutorialButton:active { transform:scale(0.95); }
+
+/* GHOST SCENE */
+.ghostScene {
+  position:absolute; top:0; left:0; width:100%; height:100%; z-index:1100; pointer-events:none;
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+}
+.ghost {
+  width:2.5rem; height:2.5rem; background:var(--card-bg);
+  border-radius:var(--border-radius);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.2rem; color:#fff;
+  position:absolute; transition:transform var(--transition-speed);
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* CONFETTI */
+.confetti-container {
+  pointer-events:none; position:absolute; top:0; left:0; width:100%; height:100%; overflow:hidden; z-index:998;
+}
+.confetti {
+  position:absolute; width:4px; height:4px; background:#ff0;
+  animation:fall 3s linear infinite;
+}
+@keyframes fall {
+  0%{opacity:1;transform:translateY(-10px);}
+  100%{opacity:0;transform:translateY(100vh);}
+}
+
+/* WUBBLE ANIMATION */
+@keyframes wubble {
+  0%,100% {transform:scale(1);}
+  50% {transform:scale(1.3);}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="startBox">
+    <div class="startContent">
+      <p class="text-bubble">Welcome to the Emoji Day Planner!</p>
+      <p class="text-bubble">Arrange your day with fun emojis.</p>
+      <p class="text-bubble">Press "Ready" to see a special 12s demo!</p>
+      <button class="startButton text-bubble" id="start-ready">Ready</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <div class="header-title text-bubble">Emoji Day Planner</div>
+    <div style="display:flex;align-items:center;">
+      <div class="timeDisplay text-bubble" id="time-display">00:00</div>
+      <button class="resetBtn text-bubble" id="reset-all">Reset</button>
+    </div>
+  </div>
+
+  <div class="segmentsContainer">
+    <div class="segmentBlock">
+      <div class="segmentTitle text-bubble">Morning</div>
+      <div class="placeholders" data-segment="Morning"></div>
+      <button class="addPlaceholderBtn text-bubble" data-segment="Morning">+</button>
+    </div>
+    <div class="segmentBlock">
+      <div class="segmentTitle text-bubble">Midday</div>
+      <div class="placeholders" data-segment="Midday"></div>
+      <button class="addPlaceholderBtn text-bubble" data-segment="Midday">+</button>
+    </div>
+    <div class="segmentBlock">
+      <div class="segmentTitle text-bubble">Evening</div>
+      <div class="placeholders" data-segment="Evening"></div>
+      <button class="addPlaceholderBtn text-bubble" data-segment="Evening">+</button>
+    </div>
+  </div>
+
+  <button class="homeworkBtn text-bubble" id="homework-btn">Homework</button>
+
+  <div class="emojiDeckContainer">
+    <div class="arrowsContainer">
+      <button class="arrowBtn text-bubble" id="left-arrow">◀️</button>
+      <div class="categoryLabel text-bubble" id="category-label">Category 1/6</div>
+      <button class="arrowBtn text-bubble" id="right-arrow">▶️</button>
+    </div>
+    <div id="emoji-deck" class="emoji-grid"></div>
+  </div>
+
+  <div class="confetti-container" id="confetti"></div>
+
+  <div id="tutorialOverlay">
+    <div class="tutorialContent">
+      <p class="text-bubble">🎉 Drag & Drop into placeholders</p>
+      <p class="text-bubble">Double-tap to remove</p>
+      <p class="text-bubble">"+" to add more</p>
+      <p class="text-bubble">"Homework" for fun!</p>
+      <button class="tutorialButton text-bubble" id="tutorial-close">Got it!</button>
+    </div>
+  </div>
+
+  <div class="ghostScene" id="ghostScene">
+    <div class="ghost text-bubble" id="ghostElem">👻</div>
+  </div>
+</div>
+<script>
+(function(){
+  const eventsSet = [
+    {char:"🚶‍♂️",name:"walking"},{char:"🧘‍♀️",name:"yoga"},{char:"🍽️",name:"dinner"},{char:"🏊‍♂️",name:"swimming"},{char:"🚴‍♂️",name:"cycling"}
+  ];
+  const baseSet = eventsSet.concat([
+    {char:"😀",name:"happy"},{char:"😂",name:"laugh"},{char:"😊",name:"smile"},{char:"🥰",name:"love"},{char:"😍",name:"inlove"},
+    {char:"✈️",name:"travel"},{char:"🚗",name:"car"},{char:"🚂",name:"train"},{char:"🚇",name:"metro"},{char:"🛳️",name:"ship"},
+    {char:"🎨",name:"art"},{char:"🎸",name:"guitar"},{char:"🎻",name:"violin"},{char:"🎹",name:"piano"},{char:"🖌️",name:"brush"},
+    {char:"💻",name:"laptop"},{char:"📱",name:"phone"},{char:"🎥",name:"video"},{char:"🖥️",name:"desktop"},{char:"📡",name:"satellite"},
+    {char:"📦",name:"box"},{char:"🎁",name:"gift"},{char:"🛍️",name:"bag"},{char:"🎀",name:"ribbon"},{char:"📚",name:"books"}
+  ]);
+
+  function expandCategory(base) {
+    let arr=[]; for(let i=0;i<100;i++){ arr.push(base[i%base.length]);} 
+    return arr;
+  }
+
+  const categories=["events","emotion","travel","art","tech","objects"];
+  const emojiData={
+    "events":expandCategory(eventsSet),
+    "emotion":expandCategory(baseSet.slice(5,10)),
+    "travel":expandCategory(baseSet.slice(10,15)),
+    "art":expandCategory(baseSet.slice(15,20)),
+    "tech":expandCategory(baseSet.slice(20,25)),
+    "objects":expandCategory(baseSet.slice(25,30))
+  };
+
+  let currentCategoryIndex=0;
+  let currentDeck=[];
+  let homeworkActive=false;
+  let placeholdersData={
+    "Morning":[{char:null}],
+    "Midday":[{char:null}],
+    "Evening":[{char:null}]
+  };
+
+  const timeDisplay=document.getElementById('time-display');
+  const homeworkBtn=document.getElementById('homework-btn');
+  const leftArrow=document.getElementById('left-arrow');
+  const rightArrow=document.getElementById('right-arrow');
+  const categoryLabel=document.getElementById('category-label');
+  const emojiDeck=document.getElementById('emoji-deck');
+  const confettiContainer=document.getElementById('confetti');
+  const startReady=document.getElementById('start-ready');
+  const tutorialOverlay=document.getElementById('tutorialOverlay');
+  const tutorialClose=document.getElementById('tutorial-close');
+  const ghostScene=document.getElementById('ghostScene');
+  const ghostElem=document.getElementById('ghostElem');
+  const resetBtn=document.getElementById('reset-all');
+
+  function updateTime(){
+    const now=new Date();
+    const hh=String(now.getHours()).padStart(2,'0');
+    const mm=String(now.getMinutes()).padStart(2,'0');
+    timeDisplay.textContent=`${hh}:${mm}`;
+  }
+  setInterval(updateTime,60000);updateTime();
+
+  function loadCategory(index){
+    const cat=categories[index];
+    currentDeck=emojiData[cat];
+    categoryLabel.textContent=cat.charAt(0).toUpperCase()+cat.slice(1)+" "+(index+1)+"/"+categories.length;
+    renderDeck();
+  }
+
+  function renderDeck(){
+    emojiDeck.innerHTML="";
+    currentDeck.forEach((em,i)=>{
+      const div=document.createElement('div');
+      div.className='emojiItem text-bubble';
+      div.textContent=em.char;
+      div.dataset.index=i;
+      div.addEventListener('touchstart',onEmojiTouchStart,{passive:false});
+      emojiDeck.appendChild(div);
+    });
+  }
+
+  let draggingEmoji=null;
+  let dragOffsetX=0; let dragOffsetY=0; 
+  let dragStartX=0; let dragStartY=0;
+  let originalDeckIndex=null; 
+
+  function onEmojiTouchStart(e){
+    if(e.touches.length>1)return;
+    const target=e.currentTarget;
+    originalDeckIndex=target.dataset.index;
+    const rect=target.getBoundingClientRect();
+    draggingEmoji=target.cloneNode(true);
+    draggingEmoji.style.position='fixed';
+    draggingEmoji.style.zIndex='1000';
+    draggingEmoji.style.left=(e.touches[0].clientX - rect.width/2)+'px';
+    draggingEmoji.style.top=(e.touches[0].clientY - rect.height/2)+'px';
+    draggingEmoji.style.transition='none';
+    draggingEmoji.style.transform='scale(1.2)';
+    draggingEmoji.style.boxShadow='0 0 8px rgba(0,0,0,0.2)';
+    dragStartX=e.touches[0].clientX;
+    dragStartY=e.touches[0].clientY;
+    dragOffsetX = e.touches[0].clientX - parseInt(draggingEmoji.style.left);
+    dragOffsetY = e.touches[0].clientY - parseInt(draggingEmoji.style.top);
+    document.body.appendChild(draggingEmoji);
+
+    document.addEventListener('touchmove',onEmojiTouchMove,{passive:false});
+    document.addEventListener('touchend',onEmojiTouchEnd,{passive:false});
+    e.preventDefault();
+  }
+
+  function onEmojiTouchMove(e){
+    if(!draggingEmoji)return;
+    e.preventDefault();
+    const x=e.touches[0].clientX - dragOffsetX;
+    const y=e.touches[0].clientY - dragOffsetY;
+    draggingEmoji.style.left=x+'px';
+    draggingEmoji.style.top=y+'px';
+    updatePlaceholderGlow(x,y,true);
+  }
+
+  function onEmojiTouchEnd(e){
+    if(!draggingEmoji)return;
+    const x=parseInt(draggingEmoji.style.left);
+    const y=parseInt(draggingEmoji.style.top);
+    if(!attemptDropInPlaceholder(x,y)){
+      returnToDeck();
+    } else {
+      if(draggingEmoji && draggingEmoji.parentElement)document.body.removeChild(draggingEmoji);
+    }
+    draggingEmoji=null;
+    document.removeEventListener('touchmove',onEmojiTouchMove);
+    document.removeEventListener('touchend',onEmojiTouchEnd);
+    updatePlaceholderGlow(0,0,false,true);
+  }
+
+  function attemptDropInPlaceholder(x,y){
+    const allPh=document.querySelectorAll('.placeholder');
+    for(let ph of allPh){
+      const rect=ph.getBoundingClientRect();
+      const dist=Math.hypot((rect.x+rect.width/2)-(x+rect.width/2),(rect.y+rect.height/2)-(y+rect.height/2));
+      if(dist<40){
+        const seg=ph.parentElement.getAttribute('data-segment');
+        const idx=parseInt(ph.getAttribute('data-index'));
+        const emoji=draggingEmoji.textContent;
+        placeholdersData[seg][idx].char=emoji;
+        renderPlaceholders();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function returnToDeck(){
+    const original = emojiDeck.querySelector(`.emojiItem[data-index='${originalDeckIndex}']`);
+    if(!original){ 
+      if(draggingEmoji && draggingEmoji.parentElement)document.body.removeChild(draggingEmoji);
+      return;
+    }
+    const rect=original.getBoundingClientRect();
+    draggingEmoji.style.transition='transform 0.3s, left 0.3s, top 0.3s';
+    draggingEmoji.style.transform='scale(1)';
+    draggingEmoji.style.left=(rect.left)+'px';
+    draggingEmoji.style.top=(rect.top)+'px';
+    draggingEmoji.style.boxShadow='none';
+    setTimeout(()=>{
+      if(draggingEmoji && draggingEmoji.parentElement)document.body.removeChild(draggingEmoji);
+    },300);
+  }
+
+  function updatePlaceholderGlow(x,y,dragging,clear=false){
+    const allPh=document.querySelectorAll('.placeholder');
+    allPh.forEach(ph=>{
+      ph.classList.remove('glow');
+      if(draggingEmoji&&dragging){
+        const rect=ph.getBoundingClientRect();
+        const dist=Math.hypot((rect.x+rect.width/2)-(x+16),(rect.y+rect.height/2)-(y+16));
+        if(dist<40) ph.classList.add('glow');
+      }
+      if(clear) ph.classList.remove('glow');
+    });
+  }
+
+  function renderPlaceholders(){
+    ["Morning","Midday","Evening"].forEach(seg=>{
+      const container=document.querySelector('.placeholders[data-segment="'+seg+'"]');
+      container.innerHTML="";
+      placeholdersData[seg].forEach((p,i)=>{
+        const ph=document.createElement('div');
+        ph.className='placeholder text-bubble';
+        ph.setAttribute('data-index',i);
+        if(p.char) ph.textContent=p.char;
+        ph.addEventListener('touchstart',(ev)=>onPlaceholderTouchStart(ev,seg,i),{passive:false});
+        container.appendChild(ph);
+      });
+    });
+  }
+
+  let doubleTapTimeout=null; let lastPlaceholderTapped=null;
+  function onPlaceholderTouchStart(e,seg,i){
+    if(e.touches.length>1)return;
+    e.preventDefault();
+    const target=e.currentTarget;
+    if(doubleTapTimeout && lastPlaceholderTapped===target){
+      placeholdersData[seg][i].char=null;
+      renderPlaceholders();
+      clearTimeout(doubleTapTimeout);
+      doubleTapTimeout=null;
+      lastPlaceholderTapped=null;
+    } else {
+      lastPlaceholderTapped=target;
+      doubleTapTimeout=setTimeout(()=>{
+        doubleTapTimeout=null;
+        lastPlaceholderTapped=null;
+      },300);
+    }
+  }
+
+  function switchCategory(dir){
+    currentCategoryIndex=(currentCategoryIndex+dir+categories.length)%categories.length;
+    loadCategory(currentCategoryIndex);
+    launchConfetti();
+  }
+
+  function addPlaceholder(seg){
+    placeholdersData[seg].push({char:null});
+    renderPlaceholders();
+  }
+
+  function toggleHomework(){
+    homeworkActive=!homeworkActive;
+    if(homeworkActive){
+      homeworkBtn.textContent="Homework 👋";
+      homeworkBtn.style.background=var(--accent-green);
+      homeworkBtn.style.animation='wubble 0.5s ease';
+      setTimeout(()=>{ homeworkBtn.style.animation='none'; },500);
+      launchConfetti();
+    } else {
+      homeworkBtn.textContent="Homework";
+      homeworkBtn.style.background=var(--accent-orange);
+    }
+  }
+
+  function launchConfetti(){
+    for(let i=0;i<20;i++){
+      const c=document.createElement('div');
+      c.className='confetti';
+      c.style.left=Math.random()*100+"%";
+      c.style.backgroundColor=`hsl(${Math.random()*360},100%,50%)`;
+      c.style.animationDelay=(Math.random()*1)+"s";
+      confettiContainer.appendChild(c);
+      setTimeout(()=>{if(confettiContainer.contains(c))confettiContainer.removeChild(c);},3000);
+    }
+  }
+
+  function runGhostTutorial(){
+    ghostScene.style.display='flex';
+    let deckRect=emojiDeck.getBoundingClientRect();
+    let morningPl = document.querySelector('.placeholders[data-segment="Morning"] .placeholder');
+    let morningRect=morningPl.getBoundingClientRect();
+
+    ghostElem.style.left=(deckRect.left+deckRect.width/2 -20)+'px';
+    ghostElem.style.top=(deckRect.top+deckRect.height/2 -20)+'px';
+
+    setTimeout(()=>{
+      let firstEmoji = emojiDeck.querySelector('.emojiItem');
+      if(firstEmoji){
+        let feRect=firstEmoji.getBoundingClientRect();
+        ghostElem.style.transform=`translate(${feRect.left-(deckRect.left+deckRect.width/2)}px,${feRect.top-(deckRect.top+deckRect.height/2)}px)`;
+      }
+    },2000);
+
+    setTimeout(()=>{
+      ghostElem.style.transform=`translate(${morningRect.left-(deckRect.left+deckRect.width/2)}px,${morningRect.top-(deckRect.top+deckRect.height/2)}px)`;
+    },5000);
+
+    setTimeout(()=>{ homeworkBtn.click(); },7000);
+
+    setTimeout(()=>{
+      let middayPlus=document.querySelector('.addPlaceholderBtn[data-segment="Midday"]');
+      let mpRect=middayPlus.getBoundingClientRect();
+      ghostElem.style.transform=`translate(${mpRect.left-(deckRect.left+deckRect.width/2)}px,${mpRect.top-(deckRect.top+deckRect.height/2)}px)`;
+      setTimeout(()=>{middayPlus.click();},1500);
+    },9000);
+
+    setTimeout(()=>{
+      ghostScene.style.display='none';
+      tutorialOverlay.style.display='flex';
+    },12000);
+  }
+
+  function resetAll(){
+    placeholdersData={
+      "Morning":[{char:null}],
+      "Midday":[{char:null}],
+      "Evening":[{char:null}]
+    };
+    loadCategory(currentCategoryIndex);
+    renderPlaceholders();
+  }
+
+  /* Event Listeners */
+  document.querySelectorAll('.addPlaceholderBtn').forEach(btn=>{
+    btn.addEventListener('click',()=>addPlaceholder(btn.getAttribute('data-segment')));
+  });
+  leftArrow.addEventListener('click',()=>switchCategory(-1));
+  rightArrow.addEventListener('click',()=>switchCategory(1));
+  homeworkBtn.addEventListener('click',toggleHomework);
+  tutorialClose.addEventListener('click',()=>{
+    tutorialOverlay.style.display='none';
+  });
+  startReady.addEventListener('click',()=>{
+    document.getElementById('startBox').style.display='none';
+    runGhostTutorial();
+  });
+  resetBtn.addEventListener('click',resetAll);
+
+  loadCategory(currentCategoryIndex);
+  renderPlaceholders();
+
+  // Initial time update
+  updateTime();
+})();
+</script>
+</body>
+</html>
